@@ -1,0 +1,99 @@
+name: Build
+
+on:
+  repository_dispatch:
+    types: [Build]
+  workflow_dispatch:
+
+jobs:
+  build-public:
+    if: >
+      github.event.repository.visibility == 'public' &&
+      github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.tag != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.client_payload.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Create package
+        run: |
+          rm -rf *.tar.gz
+          npx --yes wspackager@latest
+
+      - name: Check file existence
+        id: check_files
+        uses: andstor/file-existence-action@v3
+        with:
+          files: "*.tar.gz"
+
+      - name: On Build Failure
+        if: steps.check_files.outputs.files_exists == 'false'
+        run: |
+          echo "Packaging FAILED" && exit 1
+
+      - name: Set Release Tag
+        id: set_release_tag
+        run: |
+          echo "release_tag=${{ github.event.client_payload.tag }}" >> $GITHUB_ENV
+
+      - name: Release Build
+        if: env.release_tag != 'unknown' && steps.check_files.outputs.files_exists == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.release_tag }}
+          files: "*.tar.gz"
+
+  build-private:
+    if: >
+      github.event.repository.visibility != 'public' &&
+      github.event_name == 'repository_dispatch' &&
+      github.event.client_payload.tag != ''
+    runs-on: self-hosted
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.client_payload.tag }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+
+      - name: Create package
+        run: |
+          rm -rf *.tar.gz
+          npx --yes wspackager@latest
+
+      - name: Check file existence
+        id: check_files
+        uses: andstor/file-existence-action@v3
+        with:
+          files: "*.tar.gz"
+
+      - name: On Build Failure
+        if: steps.check_files.outputs.files_exists == 'false'
+        run: |
+          echo "Packaging FAILED" && exit 1
+
+      - name: Set Release Tag
+        id: set_release_tag
+        run: |
+          echo "release_tag=${{ github.event.client_payload.tag }}" >> $GITHUB_ENV
+
+      - name: Release Build
+        if: env.release_tag != 'unknown' && steps.check_files.outputs.files_exists == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.release_tag }}
+          files: "*.tar.gz"

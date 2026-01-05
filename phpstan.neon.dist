@@ -1,0 +1,14 @@
+parameters:
+    treatPhpDocTypesAsCertain: false
+    level: 6
+    paths:
+        - files
+    excludePaths:
+        analyse:
+            - files/lib/system/api/
+    bootstrapFiles:
+        - constants.php
+        - ../../com.woltlab.wcf/constants.php
+    scanDirectories:
+        - ../../com.woltlab.wcf/wcfsetup/install/files
+    tmpDir: .phpstan-cache

@@ -82,3 +82,5 @@ public/build/
 # Ignore test reports and coverage
 coverage/
 *.lcov
+
+.phpstan-cache

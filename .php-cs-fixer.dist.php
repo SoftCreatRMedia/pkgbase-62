@@ -1,4 +1,5 @@
 <?php
+
 $finder = PhpCsFixer\Finder::create()
     ->exclude('*/vendor/*')
     ->exclude('node_modules')
@@ -61,7 +62,7 @@ return (new PhpCsFixer\Config())
         'nullable_type_declaration_for_default_null_value' => true,
         'static_lambda' => true,
 
-        'fully_qualified_strict_types' => ['leading_backslash_in_global_namespace' => true],
+        'fully_qualified_strict_types' => true,
         'no_unused_imports' => true,
 
         'dir_constant' => true,
@@ -98,16 +99,17 @@ return (new PhpCsFixer\Config())
         'space_after_semicolon' => ['remove_in_empty_for_expressions' => true],
 
         'escape_implicit_backslashes' => true,
-        'explicit_string_variable' => true,
+        'explicit_string_variable' => false,
         'heredoc_to_nowdoc' => true,
         'no_binary_string' => true,
-        'simple_to_complex_string_variable' => true,
+        'simple_to_complex_string_variable' => false,
 
         'array_indentation' => true,
         'blank_line_before_statement' => ['statements' => ['return', 'exit']],
         'method_chaining_indentation' => true,
         'no_extra_blank_lines' => ['tokens' => ['case', 'continue', 'curly_brace_block', 'default', 'extra', 'parenthesis_brace_block', 'square_brace_block', 'switch', 'throw', 'use']],
         'no_spaces_around_offset' => true,
+        'types_spaces' => ['space' => 'single', 'space_multiple_catch' => 'single'],
 
         // SoftCreatR style
         'global_namespace_import' => [

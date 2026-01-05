@@ -9,8 +9,8 @@ if (!\file_exists('option.xml')) {
 $xmlString = \file_get_contents('option.xml');
 
 try {
-    $xml = new SimpleXMLElement($xmlString);
-} catch (Exception $e) {
+    $xml = new \SimpleXMLElement($xmlString);
+} catch (\Exception $e) {
     exit(0);
 }
 

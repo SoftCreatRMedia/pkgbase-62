@@ -5,7 +5,7 @@ parameters:
         - files
     excludePaths:
         analyse:
-            - files/lib/system/api/
+            - files/lib/system/api/ (?)
     bootstrapFiles:
         - constants.php
         - ../../com.woltlab.wcf/constants.php

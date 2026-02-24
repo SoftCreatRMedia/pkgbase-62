@@ -48,14 +48,14 @@ jobs:
               core.setOutput('proceed', 'true');
             }
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         if: steps.source_run.outputs.proceed == 'true'
         with:
           ref: ${{ github.event.client_payload.tag }}
 
       - name: Setup Node.js
         if: steps.source_run.outputs.proceed == 'true'
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '20'
           cache: 'npm'
@@ -65,7 +65,7 @@ jobs:
         if: steps.source_run.outputs.proceed == 'true'
         run: |
           rm -rf *.tar.gz
-          npx --yes wspackager@latest
+          npx --yes @softcreatr/wspackager@latest
 
       - name: Check package output
         id: check_files

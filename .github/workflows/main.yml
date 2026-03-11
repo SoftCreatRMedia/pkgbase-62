@@ -51,7 +51,6 @@ jobs:
             tsconfig*.json
             eslint.config.mjs
             .prettierrc
-            .phpcs.xml
             .php-cs-fixer.dist.php
             package.xml
             language/**
@@ -140,7 +139,7 @@ jobs:
           fi
 
           php_changed=false
-          if echo "$changed_files" | grep -Eq '\.php$|^\.phpcs\.xml$|^\.php-cs-fixer\.dist\.php$'; then
+          if echo "$changed_files" | grep -Eq '\.php$|^\.php-cs-fixer\.dist\.php$'; then
             php_changed=true
           fi
 
@@ -284,7 +283,7 @@ jobs:
           fi
 
   php:
-    name: PHP Code Style, Fixes, and Syntax Check
+    name: PHP Code Style and Syntax Check
     needs: init
     if: needs.init.outputs.check_php == 'true'
     runs-on: ubuntu-latest
@@ -303,17 +302,12 @@ jobs:
         with:
           php-version: ${{ matrix.php-version }}
           extensions: ctype, dom, exif, gd, gmp, hash, intl, json, libxml, mbstring, opcache, pcre, pdo, pdo_mysql, zlib, xml, phar
-          tools: cs2pr, phpcs, php-cs-fixer
+          tools: php-cs-fixer
 
-      - name: PHP Code Style Check (phpcs)
+      - name: PHP Code Style Check (php-cs-fixer)
         if: matrix.full_check
         run: |
-          phpcs -n -q --report=checkstyle | cs2pr
-
-      - name: PHP Code Fix Check (php-cs-fixer)
-        if: matrix.full_check
-        run: |
-          PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer fix --dry-run --diff
+          PHP_CS_FIXER_IGNORE_ENV=1 php-cs-fixer check --diff
 
       - name: Add PHP Syntax Matcher
         run: |

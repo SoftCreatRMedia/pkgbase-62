@@ -1,5 +1,43 @@
 <?php
 
+/*
+ * Copyright by SoftCreatR.dev.
+ *
+ * License: https://softcreatr.dev/license-terms
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ * The above copyright notice and this disclaimer notice shall be included in all
+ * copies or substantial portions of the Software.
+ */
+
+$phpHeader = <<<'PHP'
+<?php
+
+/*
+ * Copyright by SoftCreatR.dev.
+ *
+ * License: https://softcreatr.dev/license-terms
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ * The above copyright notice and this disclaimer notice shall be included in all
+ * copies or substantial portions of the Software.
+ */
+PHP;
+
 if (!\file_exists('option.xml')) {
     echo "option.xml not found.";
 
@@ -21,21 +59,21 @@ $constants = [];
 $constantNames = [];
 
 foreach ($xml->xpath('//ns:import/ns:options/ns:option') as $option) {
-    $name = \strtoupper(\str_replace(['.', ':'], '_', (string)$option['name']));
-    $defaultValue = (string)$option->defaultvalue;
-    $optionType = (string)$option->optiontype;
+    $name = \strtoupper(\str_replace(['.', ':'], '_', (string) $option['name']));
+    $defaultValue = (string) $option->defaultvalue;
+    $optionType = (string) $option->optiontype;
     $constantNames[] = $name;
 
     if ($defaultValue === '') {
         $constants[] = "const $name = '';";
     } elseif ($optionType === 'boolean' || $optionType === 'integer') {
-        $constants[] = "const $name = " . (int)$defaultValue . ";";
+        $constants[] = "const $name = " . (int) $defaultValue . ";";
     } else {
         $constants[] = "const $name = '$defaultValue';";
     }
 }
 
-\file_put_contents('constants.php', "<?php\n\n" . \implode("\n", $constants) . "\n");
+\file_put_contents('constants.php', $phpHeader . "\n\n" . \implode("\n", $constants) . "\n");
 
 $phpstanPath = 'phpstan.neon.dist';
 if (!empty($constantNames) && \file_exists($phpstanPath)) {

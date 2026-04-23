@@ -62,16 +62,37 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Create package
+        id: package
         if: steps.source_run.outputs.proceed == 'true'
         run: |
           rm -rf *.tar.gz
-          npx --yes @softcreatr/wspackager@latest
+          
+          build_result="$(npx --yes @softcreatr/wspackager@latest --json)"
+          echo "$build_result" > wspackager-result.json
+
+          package_ok="$(jq -r '.ok' wspackager-result.json)"
+          
+          if [ "$package_ok" != "true" ]; then
+            echo "Packaging FAILED"
+            cat wspackager-result.json
+            exit 1
+          fi
+
+          package_path="$(jq -r '.result.path' wspackager-result.json)"
+          
+          if [ -z "$package_path" ] || [ "$package_path" = "null" ] || [ ! -f "$package_path" ]; then
+            echo "Packaging FAILED: no archive was created"
+            cat wspackager-result.json
+            exit 1
+          fi
+
+          echo "package_path=$package_path" >> "$GITHUB_OUTPUT"
 
       - name: Check package output
         id: check_files
         if: steps.source_run.outputs.proceed == 'true'
         run: |
-          if ls *.tar.gz >/dev/null 2>&1; then
+          if [ -n "${{ steps.package.outputs.package_path }}" ] && [ -f "${{ steps.package.outputs.package_path }}" ]; then
             echo "files_exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "files_exists=false" >> "$GITHUB_OUTPUT"
@@ -87,4 +108,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.client_payload.tag }}
-          files: "*.tar.gz"
+          files: ${{ steps.package.outputs.package_path }}

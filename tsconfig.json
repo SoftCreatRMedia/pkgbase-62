@@ -11,6 +11,7 @@
     "esModuleInterop": true,
     "noImplicitThis": true,
     "strictBindCallApply": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "paths": {
       "*": ["node_modules/@woltlab/d.ts/*"]

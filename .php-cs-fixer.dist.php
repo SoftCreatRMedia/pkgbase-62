@@ -35,5 +35,20 @@ return (new PhpCsFixer\Config())
         'ordered_imports' => [
             'imports_order' => ['class', 'function', 'const'],
         ],
+        'blank_line_before_statement' => [
+            'statements' => [
+                'break',
+                'continue',
+                'do',
+                'for',
+                'foreach',
+                'if',
+                'return',
+                'switch',
+                'throw',
+                'try',
+                'while',
+            ],
+        ],
     ])
     ->setFinder($finder);

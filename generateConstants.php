@@ -76,6 +76,7 @@ foreach ($xml->xpath('//ns:import/ns:options/ns:option') as $option) {
 \file_put_contents('constants.php', $phpHeader . "\n\n" . \implode("\n", $constants) . "\n");
 
 $phpstanPath = 'phpstan.neon.dist';
+
 if (!empty($constantNames) && \file_exists($phpstanPath)) {
     $phpstan = \file_get_contents($phpstanPath);
 
@@ -102,6 +103,7 @@ if (!empty($constantNames) && \file_exists($phpstanPath)) {
         foreach ($lines as $index => $line) {
             if (\preg_match('/^\s*level:\s*/', $line)) {
                 $insertAfter = $index;
+
                 break;
             }
         }
@@ -110,6 +112,7 @@ if (!empty($constantNames) && \file_exists($phpstanPath)) {
             foreach ($lines as $index => $line) {
                 if (\trim($line) === 'parameters:') {
                     $insertAfter = $index;
+
                     break;
                 }
             }

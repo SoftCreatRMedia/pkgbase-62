@@ -25,7 +25,7 @@ jobs:
       packagexml_check: ${{ steps.validate_translations.outputs.packagexml_check }}
       is_release: ${{ steps.set_release.outputs.is_release }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Get Commit Message
         id: get_commit_message
@@ -51,15 +51,18 @@ jobs:
             tsconfig*.json
             eslint.config.mjs
             .prettierrc
+            .npmrc
+            .github/workflows/**
             .php-cs-fixer.dist.php
             package.xml
             language/**
 
       - name: Set Release Flag
         id: set_release
+        env:
+          COMMIT_MESSAGE: ${{ steps.get_commit_message.outputs.commit_message }}
         run: |
-          cm="${{ steps.get_commit_message.outputs.commit_message }}"
-          if [[ "$cm" =~ ^\[Release\][[:space:]]+[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+          if [[ "$COMMIT_MESSAGE" =~ ^\[Release\][[:space:]]+[0-9]+\.[0-9]+\.[0-9]+ ]]; then
             echo "is_release=true" >> "$GITHUB_OUTPUT"
           else
             echo "is_release=false" >> "$GITHUB_OUTPUT"
@@ -123,13 +126,18 @@ jobs:
           is_release="${{ steps.set_release.outputs.is_release }}"
           changed_files="$(echo "${{ steps.changed_files.outputs.all_changed_files }}" | tr ' ' '\n')"
 
+          # Manual runs and workflow changes exercise every applicable check.
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]] || echo "$changed_files" | grep -Eq '^\.github/workflows/'; then
+            is_release=true
+          fi
+
           ts_changed=false
-          if echo "$changed_files" | grep -Eq '\.ts$|tsconfig[^/]*\.json|^package\.json$|^package-lock\.json$|^eslint\.config\.mjs$'; then
+          if echo "$changed_files" | grep -Eq '\.ts$|tsconfig[^/]*\.json|^package\.json$|^package-lock\.json$|^eslint\.config\.mjs$|^\.prettierrc$|^\.npmrc$'; then
             ts_changed=true
           fi
 
           scss_changed=false
-          if echo "$changed_files" | grep -Eq '^files/style/.*\.scss$|^package\.json$|^package-lock\.json$|^\.prettierrc$'; then
+          if echo "$changed_files" | grep -Eq '^files/style/.*\.scss$|^package\.json$|^package-lock\.json$|^\.prettierrc$|^\.npmrc$'; then
             scss_changed=true
           fi
 
@@ -144,7 +152,7 @@ jobs:
           fi
 
           js_sync_changed=false
-          if echo "$changed_files" | grep -Eq '\.ts$|\.js$|tsconfig[^/]*\.json|^package\.json$|^package-lock\.json$'; then
+          if echo "$changed_files" | grep -Eq '\.ts$|\.js$|tsconfig[^/]*\.json|^package\.json$|^package-lock\.json$|^\.npmrc$'; then
             js_sync_changed=true
           fi
 
@@ -292,17 +300,20 @@ jobs:
         include:
           - php-version: '8.1'
             full_check: true
+            tools: php-cs-fixer
           - php-version: '8.4'
             full_check: false
+            tools: none
       fail-fast: false
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Setup PHP ${{ matrix.php-version }}
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-version }}
           extensions: ctype, dom, exif, gd, gmp, hash, intl, json, libxml, mbstring, opcache, pcre, pdo, pdo_mysql, zlib, xml, phar
-          tools: php-cs-fixer
+          tools: ${{ matrix.tools }}
+          coverage: none
 
       - name: PHP Code Style Check (php-cs-fixer)
         if: matrix.full_check
@@ -320,38 +331,64 @@ jobs:
             | grep -v '^No syntax errors detected'
 
   typescript:
-    name: TypeScript Linting and Syntax Check
+    name: TypeScript, SCSS and JavaScript Sync Checks
     needs: init
-    if: needs.init.outputs.check_ts == 'true'
+    if: >
+      needs.init.outputs.check_ts == 'true' ||
+      needs.init.outputs.check_scss == 'true' ||
+      needs.init.outputs.check_js_sync == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "npm"
           cache-dependency-path: package-lock.json
 
       - name: Install Dependencies
         run: |
           if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
+            npm ci --prefer-offline --no-audit --no-fund
           else
-            npm install --no-audit --no-fund
+            npm install --prefer-offline --no-audit --no-fund
           fi
 
       - name: TypeScript Syntax Check
+        if: needs.init.outputs.check_ts == 'true'
         run: |
-          npx tsc --noEmit
+          npm run typecheck
 
       - name: ESLint
+        if: needs.init.outputs.check_ts == 'true'
         run: |
           npx eslint .
 
       - name: Prettier Format Check
+        if: needs.init.outputs.check_ts == 'true'
         run: |
           npx prettier --check "**/*.ts"
+
+      - name: Run Prettier on SCSS
+        if: needs.init.outputs.check_scss == 'true'
+        run: npx prettier --check "files/style/**/*.scss"
+
+      - name: Remove Specific Directories
+        if: needs.init.outputs.check_js_sync == 'true'
+        run: rm -rf files/js/SoftCreatR/ files/js/MysteryCode/
+
+      - name: Compile AMD JavaScript
+        if: needs.init.outputs.check_js_sync == 'true'
+        run: npm run build
+
+      - name: Add JavaScript Sync Matcher
+        if: needs.init.outputs.check_js_sync == 'true'
+        run: echo "::add-matcher::.github/diff.json"
+
+      - name: Show JavaScript Sync Diff
+        if: needs.init.outputs.check_js_sync == 'true'
+        run: git diff --exit-code -- '*.js'
 
   javascript:
     name: JavaScript Linting and Syntax Check
@@ -359,11 +396,11 @@ jobs:
     if: needs.init.outputs.check_js == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
 
       - name: Add JavaScript Syntax Matcher
         run: |
@@ -381,73 +418,8 @@ jobs:
             done
           fi
 
-  scss:
-    name: SCSS Prettier
-    needs: init
-    if: needs.init.outputs.check_scss == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: package-lock.json
-
-      - name: Install Dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
-
-      - name: Run Prettier on SCSS
-        run: |
-          npx prettier --check "files/style/**/*.scss"
-
-  javascript_sync:
-    name: Check for Outdated JavaScript
-    needs: init
-    if: needs.init.outputs.check_js_sync == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "20"
-          cache: "npm"
-          cache-dependency-path: package-lock.json
-
-      - name: Install Dependencies
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --no-audit --no-fund
-          fi
-
-      - name: Remove Specific Directories
-        run: |
-          rm -rf files/js/SoftCreatR/
-          rm -rf files/js/MysteryCode/
-
-      - name: Run TSC
-        run: |
-          npx tsc
-
-      - name: Add JavaScript Sync Matcher
-        run: |
-          echo "::add-matcher::.github/diff.json"
-
-      - name: Show JavaScript Sync Diff
-        run: |
-          git diff --exit-code -- '*.js'
-
   create-release:
-    needs: [init, php, typescript, javascript, scss, javascript_sync]
+    needs: [init, php, typescript, javascript]
     if: >
       always() && !cancelled() &&
       (startsWith(github.event.head_commit.message, '[Release]') || startsWith(github.ref, 'refs/tags/')) &&
@@ -457,8 +429,6 @@ jobs:
           !contains(needs.php.result, 'failure') &&
           !contains(needs.typescript.result, 'failure') &&
           !contains(needs.javascript.result, 'failure') &&
-          !contains(needs.scss.result, 'failure') &&
-          !contains(needs.javascript_sync.result, 'failure') &&
           needs.init.outputs.language_check == 'true' &&
           needs.init.outputs.packagexml_check == 'true'
         )
@@ -468,18 +438,12 @@ jobs:
       contents: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: List Existing Tags
         run: git tag -l
-
-      - name: Clean Git Repository
-        run: |
-          git fetch --prune --tags
-          git tag -d $(git tag) || true
-          git fetch --tags
 
       - name: Get current version
         id: current-version
@@ -502,11 +466,6 @@ jobs:
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
           git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git "${{ env.version }}"
-
-      - name: Verify Tag Push
-        run: |
-          git fetch --tags
-          git tag -l
 
       - name: Trigger Build Workflow
         if: ${{ !cancelled() }}

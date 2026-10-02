@@ -1,13 +1,13 @@
 declare module "*.css";
 
 interface JQueryStatic {
-  (...args: unknown[]): JQuery;
+    (...args: unknown[]): JQuery;
 }
 
 declare namespace google {
-  namespace maps {
-    class Geocoder {}
+    namespace maps {
+        class Geocoder {}
 
-    class Map {}
-  }
+        class Map {}
+    }
 }

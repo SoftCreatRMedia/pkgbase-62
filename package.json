@@ -1,17 +1,25 @@
 {
+  "scripts": {
+    "typecheck": "node node_modules/@typescript/native/bin/tsc --noEmit --skipLibCheck",
+    "build": "node node_modules/typescript/bin/tsc6 --project tsconfig.amd.json",
+    "lint": "eslint ts",
+    "format": "eslint ts --fix && prettier --write ts",
+    "format:check": "eslint ts && prettier --check ts"
+  },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.7",
     "@eslint/js": "^10.0.1",
-    "@typescript-eslint/eslint-plugin": "^8.69.0",
-    "@typescript-eslint/parser": "^8.69.0",
+    "@typescript-eslint/eslint-plugin": "^8.71.0",
+    "@typescript-eslint/parser": "^8.71.0",
+    "@typescript/native": "npm:typescript@^7.0.2",
     "esbuild": "^0.28.2",
-    "eslint": "^10.9.1",
+    "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
-    "prettier": "^3.9.6",
+    "prettier": "^3.9.9",
     "tslib": "^2.8.1",
-    "typescript": "^6.0.3"
+    "typescript": "npm:@typescript/typescript6@^6.0.2"
   },
   "dependencies": {
-    "@woltlab/d.ts": "https://github.com/WoltLab/d.ts.git#f45e8fa275305b43b3cbd7d38e5597f42f6e5ba4"
+    "@woltlab/d.ts": "https://github.com/WoltLab/d.ts.git#25a3a5b5af84b3a1deeddb30d4d9680a32cf6e5f"
   }
 }
